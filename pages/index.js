@@ -1,77 +1,64 @@
-import { useState } from 'react'
+import { useState } from 'react';
 
 export default function Home() {
-  const [input, setInput] = useState('')
-  const [output, setOutput] = useState('')
-  const [loading, setLoading] = useState(false)
-  const [authenticated, setAuthenticated] = useState(false)
-  const [password, setPassword] = useState('')
+  const [messages, setMessages] = useState([]);
+  const [input, setInput] = useState('');
+  const [loading, setLoading] = useState(false);
 
-  const handleAuth = () => {
-    if (password === process.env.NEXT_PUBLIC_SITE_PASSWORD) {
-      setAuthenticated(true)
-    } else {
-      alert('비밀번호가 틀렸습니다')
-    }
-  }
+  const handleSend = async () => {
+    if (!input.trim()) return;
+    const userMessage = { role: 'user', content: input };
+    setMessages([...messages, userMessage]);
+    setInput('');
+    setLoading(true);
 
-  const handleGenerate = async () => {
-    setLoading(true)
-    setOutput('')
     try {
       const res = await fetch('/api/generate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ input })
-      })
-      const data = await res.json()
-      setOutput(data.result)
+      });
+      const data = await res.json();
+      const assistantMessage = { role: 'assistant', content: data.result };
+      setMessages((prev) => [...prev, assistantMessage]);
     } catch (e) {
-      setOutput('에러 발생: ' + e.message)
+      setMessages((prev) => [...prev, { role: 'assistant', content: '에러 발생: ' + e.message }]);
     }
-    setLoading(false)
-  }
 
-  if (!authenticated) {
-    return (
-      <div className="flex flex-col items-center justify-center min-h-screen bg-gray-100">
-        <h1 className="text-xl font-semibold mb-4">비공개 GPT 포털</h1>
-        <input
-          type="password"
-          placeholder="비밀번호 입력"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          className="p-2 rounded border"
-        />
-        <button onClick={handleAuth} className="mt-4 bg-black text-white px-4 py-2 rounded">
-          접속하기
-        </button>
-      </div>
-    )
-  }
+    setLoading(false);
+  };
 
   return (
-    <div className="min-h-screen bg-white p-8">
-      <h1 className="text-2xl font-bold mb-6">나만의 GPT-4o 소설 생성기 ✨</h1>
-      <textarea
-        rows={4}
-        className="w-full border p-2 rounded mb-4"
-        placeholder="프롬프트 입력 (예: 어두운 숲에서 그녀는...)"
-        value={input}
-        onChange={(e) => setInput(e.target.value)}
-      />
-      <button
-        onClick={handleGenerate}
-        className="bg-blue-600 text-white px-4 py-2 rounded"
-        disabled={loading}
-      >
-        {loading ? '생성 중...' : 'GPT-4o로 생성'}
-      </button>
-      {output && (
-        <div className="mt-6 whitespace-pre-wrap border p-4 rounded bg-gray-50">
-          {output}
+    <div className="min-h-screen bg-[#1e1e1e] text-white flex flex-col">
+      <header className="bg-[#121212] p-4 text-xl font-semibold text-center border-b border-gray-700">
+        LuvRemi GPT
+      </header>
+
+      <main className="flex-1 overflow-y-auto p-4 space-y-4">
+        {messages.map((msg, idx) => (
+          <div key={idx} className={`p-3 rounded-lg max-w-xl ${msg.role === 'user' ? 'bg-gray-700 ml-auto' : 'bg-gray-800 mr-auto'}`}>
+            {msg.content}
+          </div>
+        ))}
+        {loading && (
+          <div className="text-gray-400">GPT가 응답 중입니다...</div>
+        )}
+      </main>
+
+      <footer className="border-t border-gray-700 p-4 bg-[#121212]">
+        <div className="flex gap-2">
+          <input
+            className="flex-1 p-3 rounded bg-gray-800 text-white"
+            placeholder="메시지를 입력하세요..."
+            value={input}
+            onChange={(e) => setInput(e.target.value)}
+            onKeyDown={(e) => e.key === 'Enter' && handleSend()}
+          />
+          <button onClick={handleSend} className="bg-green-600 px-4 py-2 rounded hover:bg-green-700">
+            전송
+          </button>
         </div>
-      )}
+      </footer>
     </div>
-  )
+  );
 }
