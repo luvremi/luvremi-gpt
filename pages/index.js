@@ -1,91 +1,53 @@
 import { useState } from 'react';
 
-export default function SquareChatbot() {
-  const [messages, setMessages] = useState([
-    { role: 'assistant', content: '안녕하세요! LuvRemi 챗봇입니다. 무엇이든 물어보세요.' }
-  ]);
+export default function Home() {
+  const [output, setOutput] = useState('');
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
 
-  const handleSend = async () => {
+  const handleGenerate = async () => {
     if (!input.trim()) return;
-    
-    const userMessage = { role: 'user', content: input };
-    setMessages([...messages, userMessage]);
-    setInput('');
     setLoading(true);
 
     try {
-      // API 호출 시뮬레이션
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      const botResponse = { role: 'assistant', content: `${input}에 대한 답변입니다. 더 자세한 정보가 필요하시면 말씀해주세요.` };
-      setMessages(prev => [...prev, botResponse]);
-    } catch (e) {
-      setMessages(prev => [...prev, { role: 'assistant', content: '오류가 발생했습니다: ' + e.message }]);
+      const res = await fetch('/api/generate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ input }),
+      });
+      const data = await res.json();
+      setOutput(data.result);
+    } catch (err) {
+      setOutput('에러 발생: ' + err.message);
     }
 
     setLoading(false);
   };
 
   return (
-    <div className="flex items-center justify-center min-h-screen bg-gray-100 p-4">
-      {/* 네모난 챗봇 창 */}
-      <div className="w-full max-w-md h-[500px] bg-white rounded-lg shadow-xl flex flex-col border border-gray-300 overflow-hidden">
-        
-        {/* 헤더 */}
-        <div className="bg-blue-600 p-4 text-white">
-          <h2 className="text-lg font-bold">LuvRemi 챗봇</h2>
-          <p className="text-xs opacity-80">실시간 AI 어시스턴트</p>
-        </div>
-        
-        {/* 채팅 내용 영역 */}
-        <div className="flex-1 p-4 overflow-y-auto bg-gray-50">
-          <div className="space-y-3">
-            {messages.map((msg, idx) => (
-              <div 
-                key={idx} 
-                className={`max-w-[80%] p-3 rounded-lg ${msg.role === 'user' 
-                  ? 'bg-blue-500 text-white ml-auto rounded-br-none' 
-                  : 'bg-gray-200 text-gray-800 mr-auto rounded-bl-none'}`}
-              >
-                {msg.content}
-              </div>
-            ))}
-            {loading && (
-              <div className="mr-auto max-w-[80%] p-3 bg-gray-200 rounded-lg rounded-bl-none">
-                <div className="flex space-x-1">
-                  <div className="w-2 h-2 bg-gray-500 rounded-full animate-bounce"></div>
-                  <div className="w-2 h-2 bg-gray-500 rounded-full animate-bounce delay-100"></div>
-                  <div className="w-2 h-2 bg-gray-500 rounded-full animate-bounce delay-200"></div>
-                </div>
-              </div>
-            )}
-          </div>
-        </div>
-        
-        {/* 입력 영역 */}
-        <div className="p-3 border-t border-gray-300 bg-white">
-          <div className="flex gap-2">
-            <input
-              type="text"
-              value={input}
-              onChange={(e) => setInput(e.target.value)}
-              onKeyDown={(e) => e.key === 'Enter' && handleSend()}
-              placeholder="메시지를 입력하세요..."
-              className="flex-1 p-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            />
-            <button
-              onClick={handleSend}
-              disabled={loading}
-              className="bg-blue-600 hover:bg-blue-700 text-white px-4 rounded disabled:opacity-50"
-            >
-              전송
-            </button>
-          </div>
-          <p className="text-xs text-gray-500 mt-1 text-center">
-            Enter 키로 전송할 수 있습니다
-          </p>
-        </div>
+    <div className="min-h-screen bg-[#1e1e1e] text-white flex flex-col items-center justify-center p-6">
+      <h1 className="text-2xl font-bold mb-6">Remi's GPT 소설 생성기 📖</h1>
+
+      <div className="w-full max-w-4xl h-[400px] bg-gray-900 border border-gray-700 rounded-lg p-6 overflow-y-auto mb-6">
+        <pre className="whitespace-pre-wrap text-lg font-serif">
+          {loading ? 'GPT가 소설을 작성 중입니다...' : output || '여기에 소설이 출력됩니다.'}
+        </pre>
+      </div>
+
+      <div className="w-full max-w-4xl flex gap-2">
+        <input
+          className="flex-1 p-3 rounded bg-gray-800 text-white placeholder-gray-400"
+          placeholder="프롬프트를 입력하세요..."
+          value={input}
+          onChange={(e) => setInput(e.target.value)}
+          onKeyDown={(e) => e.key === 'Enter' && handleGenerate()}
+        />
+        <button
+          onClick={handleGenerate}
+          className="bg-green-600 px-4 py-2 rounded hover:bg-green-700"
+        >
+          생성하기
+        </button>
       </div>
     </div>
   );
